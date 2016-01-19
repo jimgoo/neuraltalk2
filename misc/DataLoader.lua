@@ -39,12 +39,16 @@ function DataLoader:__init(opt)
   self.iterators = {}
   for i,img in pairs(self.info.images) do
     local split = img.split
-    if not self.split_ix[split] then
-      -- initialize new split
-      self.split_ix[split] = {}
-      self.iterators[split] = 1
+    -- include only images of a certain dataset if fine-tuning
+    local dataset = img.dataset
+    if (dataset == nil) or (dataset == opt.img_dataset) then
+        if not self.split_ix[split] then
+          -- initialize new split
+          self.split_ix[split] = {}
+          self.iterators[split] = 1
+        end
+        table.insert(self.split_ix[split], i)
     end
-    table.insert(self.split_ix[split], i)
   end
   for k,v in pairs(self.split_ix) do
     print(string.format('assigned %d images to split %s', #v, k))

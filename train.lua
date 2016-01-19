@@ -66,6 +66,9 @@ cmd:option('-id', '', 'an id identifying this run/job. used in cross-val and app
 cmd:option('-seed', 123, 'random number generator seed to use')
 cmd:option('-gpuid', 0, 'which gpu to use. -1 = use CPU')
 
+-- JDG
+cmd:option('-img_dataset', 'base', 'which dataset to use (base|other)')
+
 cmd:text()
 
 -------------------------------------------------------------------------------
@@ -86,7 +89,7 @@ end
 -------------------------------------------------------------------------------
 -- Create the Data Loader instance
 -------------------------------------------------------------------------------
-local loader = DataLoader{h5_file = opt.input_h5, json_file = opt.input_json}
+local loader = DataLoader{h5_file = opt.input_h5, json_file = opt.input_json, img_dataset = opt.img_dataset}
 
 -------------------------------------------------------------------------------
 -- Initialize the networks
@@ -170,11 +173,13 @@ local function eval_split(split, evalopt)
   protos.cnn:evaluate()
   protos.lm:evaluate()
   loader:resetIterator(split) -- rewind iteator back to first datapoint in the split
+    
   local n = 0
   local loss_sum = 0
   local loss_evals = 0
   local predictions = {}
   local vocab = loader:getVocab()
+    
   while true do
 
     -- fetch a batch of data
@@ -296,13 +301,18 @@ while true do
   -- eval loss/gradient
   local losses = lossFun()
   if iter % opt.losses_log_every == 0 then loss_history[iter] = losses.total_loss end
-  print(string.format('iter %d: %f', iter, losses.total_loss))
+  
+  -- print loss every 50 iters
+  if iter % 50 == 0 then 
+    print(string.format('iter %d: %f', iter, losses.total_loss)) 
+  end
 
   -- save checkpoint once in a while (or on final iteration)
   if (iter % opt.save_checkpoint_every == 0 or iter == opt.max_iters) then
 
     -- evaluate the validation performance
     local val_loss, val_predictions, lang_stats = eval_split('val', {val_images_use = opt.val_images_use})
+    
     print('validation loss: ', val_loss)
     print(lang_stats)
     val_loss_history[iter] = val_loss

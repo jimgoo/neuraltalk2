@@ -191,7 +191,7 @@ def check_img(img_path):
   if len(I.shape) == 2: # B&W
     return True  
   if len(I.shape) == 3 and I.shape[2] == 3: # 3-channel color
-     return True
+    return True
   return False
 
 def main(params):
